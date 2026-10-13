@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Page Analyzer</title>
+<style>
+  :root { --fg: #1f2328; --muted: #59636e; --line: #d1d9e0; --bg: #ffffff; --panel: #f6f8fa; --accent: #0969da; --bad: #cf222e; --good: #1a7f37; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg: #e6edf3; --muted: #9198a1; --line: #3d444d; --bg: #0d1117; --panel: #151b23; --accent: #4493f8; --bad: #f85149; --good: #3fb950; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 28px 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=text] { flex: 1 1 320px; padding: 10px 12px; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  button { padding: 10px 18px; font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
+  .hint { color: var(--muted); font-size: .875rem; margin-top: 6px; }
+  .panel { margin-top: 24px; padding: 16px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  .error { border-color: var(--bad); }
+  .error h2 { color: var(--bad); margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { width: 40%; color: var(--muted); font-weight: 500; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .yes { color: var(--good); font-weight: 600; }
+  .no { color: var(--muted); }
+  .url { word-break: break-all; }
+  .headings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; text-align: center; }
+  .headings div { padding: 8px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+  .headings b { display: block; font-size: 1.25rem; }
+  .headings span { color: var(--muted); font-size: .8rem; }
+  ul.broken { margin: 0; padding-left: 20px; }
+  ul.broken li { margin: 4px 0; }
+  .code { color: var(--bad); font-weight: 600; }
+  @media (max-width: 480px) { .headings { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Web Page Analyzer</h1>
+  <p class="lead">Enter the address of a web page to see its HTML version, title, headings, links and whether it has a login form.</p>
+
+  <form method="post" action="/analyze">
+    <input type="text" name="url" value="{{.URL}}" placeholder="https://example.com" aria-label="URL to analyze" required autofocus>
+    <button type="submit">Analyze</button>
+  </form>
+  <p class="hint">Checking every link can take up to a few seconds on large pages.</p>
+
+  {{with .Error}}
+  <section class="panel error" role="alert">
+    <h2>Error {{.StatusCode}}{{with .StatusText}} &ndash; {{.}}{{end}}</h2>
+    <p>{{.Message}}</p>
+  </section>
+  {{end}}
+
+  {{with .Result}}
+  <section class="panel">
+    <table>
+      <tr><th>Analyzed URL</th><td class="url">{{.URL}}</td></tr>
+      <tr><th>HTML version</th><td>{{.HTMLVersion}}</td></tr>
+      <tr><th>Page title</th><td>{{if .Title}}{{.Title}}{{else}}<span class="no">(no title)</span>{{end}}</td></tr>
+      <tr><th>Contains a login form</th><td>{{if .HasLoginForm}}<span class="yes">Yes</span>{{else}}<span class="no">No</span>{{end}}</td></tr>
+      <tr><th>Analysis time</th><td>{{round .Duration}}</td></tr>
+    </table>
+
+    <h2>Headings</h2>
+    <div class="headings">
+      {{range .Headings}}<div><b>{{.Count}}</b><span>{{.Level}}</span></div>{{end}}
+    </div>
+
+    <h2>Links</h2>
+    <table>
+      <tr><th>Internal links</th><td class="num">{{.InternalLinks}}</td></tr>
+      <tr><th>External links</th><td class="num">{{.ExternalLinks}}</td></tr>
+      <tr><th>Distinct links checked</th><td class="num">{{.CheckedLinks}}</td></tr>
+      <tr><th>Inaccessible links</th><td class="num">{{len .InaccessibleLinks}}</td></tr>
+      {{if .UncheckedLinks}}<tr><th>Not checked (time limit reached)</th><td class="num">{{.UncheckedLinks}}</td></tr>{{end}}
+    </table>
+
+    {{with .InaccessibleLinks}}
+    <h2>Inaccessible links</h2>
+    <ul class="broken">
+      {{range .}}
+      <li><span class="code">{{if .StatusCode}}{{.StatusCode}}{{else}}Error{{end}}</span> <span class="url">{{.URL}}</span> &ndash; {{.Reason}}</li>
+      {{end}}
+    </ul>
+    {{end}}
+  </section>
+  {{end}}
+</main>
+</body>
+</html>
