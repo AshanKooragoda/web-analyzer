@@ -10,6 +10,13 @@ A small Go web application that analyzes a web page. You enter a URL and the app
 
 If the page can't be reached, the app shows the HTTP status code and a description of what went wrong.
 
+### Documentation
+
+| Document | Read it to understand |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | How the code is organized: layers, packages, interfaces, startup/shutdown, middleware, concurrency model, testing seams, and where to make changes |
+| [docs/how-analysis-works.md](docs/how-analysis-works.md) | What happens to a URL step by step, from validation through fetching, parsing, link classification and concurrent link checking to error handling, with diagrams |
+
 ---
 
 ## Contents
